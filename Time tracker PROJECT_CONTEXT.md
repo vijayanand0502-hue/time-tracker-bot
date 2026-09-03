@@ -1,6 +1,6 @@
 # Time Tracker Bot — Project Context
 
-> **For any LLM picking up this project:** Read this entire file first. It contains everything needed to continue work without losing context. Last updated: 2026-08-28 (pre-deploy hardening pass).
+> **For any LLM picking up this project:** Read this entire file first. It contains everything needed to continue work without losing context. Last updated: 2026-09-04. **Status: deployed and running 24/7 on Railway.**
 
 ## 🔒 SECURITY INSTRUCTIONS FOR AI TOOLS
 
@@ -32,7 +32,9 @@ A personal time-tracking system that captures the owner's activities through voi
 
 ---
 
-## 3. Current Status (as of 2026-08-28)
+## 3. Current Status (as of 2026-09-04)
+
+**Phases 1–3 are complete. The bot is live on Railway, running 24/7, independent of the laptop.**
 
 - ✅ Telegram bot created via @BotFather
 - ✅ Notion database created (Time Log) under Life OS with all views
@@ -42,12 +44,13 @@ A personal time-tracking system that captures the owner's activities through voi
 - ✅ Notion entries confirmed appearing correctly
 - ✅ **Nightly summary bug found and fixed** — it could never have fired (see Section 12)
 - ✅ Timezone handling added (`Asia/Kolkata`) — required before Railway, which runs in UTC
-- ✅ `/summary` command added so the summary can be tested on demand, not only at 10 PM
-- ✅ Deploy scaffolding created: `Procfile`, `.python-version`, `.env.example`
-- ⚠️ Bot runs **locally only** — stops when laptop closes/sleeps
-- ⚠️ Nightly summary still not observed firing end-to-end — test with `/summary` first
-- ❌ **Not yet deployed to Railway** (next major step)
-- ❌ Not yet in git / GitHub
+- ✅ `/summary` command added; verified working end-to-end against real Notion data
+- ✅ Code in git, pushed to GitHub: `vijayanand0502-hue/time-tracker-bot` (private)
+- ✅ **Deployed to Railway — running 24/7**, no longer tied to the laptop
+- ⚠️ The 10 PM automatic summary has been verified by code path and by `/summary`,
+  but has not yet been *observed* firing on its own schedule on Railway. Confirm this
+  on the first night, then tick it off here.
+- ⚠️ Local runs now conflict with Railway — only one poller per Telegram token
 
 ---
 
@@ -224,28 +227,25 @@ Be direct and concise. No fluff.
 
 ## 9. What's Next (Prioritized)
 
-### Immediate — Phase 3: Deploy to Railway (~15 min)
-Goal: Bot runs 24/7 without laptop needing to be open.
+### ✅ Phase 3: Deploy to Railway — DONE (2026-09-04)
+Bot runs 24/7 on Railway, deployed from the GitHub repo. Environment variables are set
+in Railway's Variables tab, including `TIMEZONE=Asia/Kolkata`. Pushing to `main` on
+GitHub triggers an automatic redeploy.
 
-0. **Test `/summary` locally first.** The summary path has never once run end-to-end.
-   Debugging it locally is far cheaper than debugging it on Railway.
-1. Move project out of Google Drive to `~/Projects/time-tracker/`
-2. `git init`, commit, create GitHub repo, push
-   — verify `git status` does NOT list `.env` before the first push
-3. Sign up at railway.app with GitHub
-4. Create new project → Deploy from GitHub repo
-5. Add environment variables in Railway UI — the five required ones **plus `TIMEZONE=Asia/Kolkata`**
-6. Deploy. Confirm in Railway logs: `Bot running. Timezone=Asia/Kolkata.`
-7. Stop the local bot — two instances polling the same token conflict with each other
-8. Send `/summary` to confirm the deployed instance is the one answering
+### Immediate — Phase 4: Validate the habit (7 days)
+Goal: find out whether this tool actually gets used, before investing in more features.
 
-### After deployment — Phase 4: Validate habit (1 week)
-- Use daily for 7 days
-- Note friction points
-- Verify nightly summary actually triggers at 10 PM
-- Decide: keep it? modify it? productize it?
+1. **Confirm the 10 PM summary fires on its own** on the first night. This is the last
+   thing not yet observed in production.
+2. Use it daily for 7 days. Log start AND end events — the summary is only as good as
+   the pairs it can match.
+3. Note friction points as they happen: messages that parse wrong, categories that don't
+   fit, moments you *didn't* log and why. The "didn't log" cases matter most.
+4. After 7 days, decide honestly: keep it, change it, or drop it. Do not skip to Phase 5
+   before making this call — building more features on an unused tool is the failure mode.
 
 ### Later — Potential Phase 5 improvements
+*(Gated on Phase 4 actually validating the habit. Do not start these early.)*
 - Weekly summary (Sunday nights) with week-over-week trends
 - Charts/visualizations in Notion (embedded from Python)
 - Improve category detection with feedback loop (learn from user corrections)
@@ -330,31 +330,85 @@ When picking this up:
 
 ## 15. Quick Reference — Commands
 
+### Everyday use (now that it is deployed)
+
+The bot is running on Railway. You do not need to start anything.
+
+- Send a voice note or text to the bot in Telegram to log an activity
+- `/summary` — get today's summary on demand
+- Automatic summary lands at 22:00 Asia/Kolkata
+
+### Shipping a change
+
 ```bash
-# Navigate to project
 cd "/Users/vj/Library/CloudStorage/GoogleDrive-vijayanand.0502@gmail.com/My Drive/Claude Cowork/Time Tracker"
-
-# View hidden files
-ls -la
-
-# Install/update dependencies
-pip3 install -r requirements.txt --upgrade
-
-# Run bot locally
-python3 main.py
-
-# Stop bot
-# Press Ctrl + C in Terminal
-
-# View .env structure (redact values before sharing)
-cat .env
-
-# Check which Python is being used
-which python3
-
-# Check Anaconda Python location
-which python  # usually /Applications/anaconda3/bin/python
+git add -A
+git commit -m "describe the change"
+git push                 # Railway redeploys automatically on push to main
 ```
+
+Then watch the Railway deploy logs for `Bot running. Timezone=Asia/Kolkata.`
+
+### Running locally (only when you need to debug)
+
+> ⚠️ **Pause the Railway service first.** Telegram allows one poller per token; running
+> both gives `Conflict: terminated by other getUpdates request` and both misbehave.
+
+```bash
+pip3 install -r requirements.txt --upgrade
+python3 main.py          # Ctrl+C to stop
+```
+
+### Housekeeping
+
+```bash
+ls -la                   # show dotfiles
+git status               # confirm .env is NOT listed before any push
+which python3            # /Applications/anaconda3/bin/python3
+```
+
+---
+
+## 16. Working On This From Another Machine or Another LLM
+
+### What the repo carries — and what it deliberately does not
+
+`git clone` gives you **everything except the secrets**: all code, this context file,
+`AGENTS.md`/`CLAUDE.md`, and the full commit history. `.env` is intentionally excluded
+by `.gitignore` and must be recreated by hand on each machine.
+
+**This means the five secret values live nowhere in the repo.** Keep them in a password
+manager (Apple Passwords, 1Password, Bitwarden). Once deployed, Railway's Variables tab
+also holds a readable copy, so that is a usable fallback — but a password manager is the
+right home. If you lose all copies, every key must be regenerated from scratch.
+
+### Setting up on a new machine
+
+```bash
+git clone https://github.com/<your-username>/time-tracker.git
+cd time-tracker
+cp .env.example .env          # then fill in the 5 values from your password manager
+pip3 install -r requirements.txt
+python3 main.py
+```
+
+> ⚠️ **Do not run `python3 main.py` while Railway is also running the bot.** Telegram
+> allows only one poller per token — two instances will throw `Conflict: terminated by
+> other getUpdates request` at each other and both behave erratically. On a second
+> machine, edit and push; let Railway do the running. To test locally, pause the
+> Railway service first.
+
+### Using a different LLM (Codex, Cursor, ChatGPT, etc.)
+
+`AGENTS.md` is the entry point and is picked up automatically by Codex and most agent
+tools; `CLAUDE.md` is a symlink to it for Claude Code. Both say the same thing: read this
+context file first. For a chat-only LLM with no repo access, paste this file in as the
+first message — it was written to be sufficient on its own.
+
+**Keep this file current.** It is the only thing that makes the project portable across
+machines, tools, and models. When you change architecture, hit a real bug, or finish a
+phase, update the relevant section and the "Last updated" line at the top. A stale context
+file is worse than none, because the next reader will trust it.
 
 ---
 
