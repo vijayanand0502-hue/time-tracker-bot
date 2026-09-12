@@ -4,7 +4,9 @@ A personal Telegram bot that captures daily activities by voice or text, transcr
 categorises them with AI, logs each one to Notion, and sends an honest summary of the day
 at 10 PM.
 
-**Status:** deployed and running 24/7 on Railway.
+**Status:** complete. Deployed on Railway, running 24/7, with every part of the
+pipeline — capture, transcription, parsing, Notion logging, and the scheduled 10 PM
+summary — verified working in production.
 
 The problem it solves: understanding where the day actually goes — deep work vs meals vs
 doom scrolling vs unaccounted gaps — without the friction of opening an app and filling in
@@ -144,9 +146,11 @@ Full detail is in Section 7 and the debug log of the context file.
 
 ## Roadmap
 
-Currently in **Phase 4** — using it daily for a week to find out whether the habit holds
-before building anything further. Possible next steps (weekly summaries, automatic
-duration calculation, multi-activity parsing) are deliberately gated on that.
+The build is finished; nothing is outstanding. What remains is a usage question, not an
+engineering one: whether the habit actually holds. Possible next steps — weekly summaries,
+automatic duration calculation from START/END pairs, multi-activity parsing — are
+deliberately gated on that, because adding features to a tool nobody uses is the more
+expensive mistake.
 
 ---
 

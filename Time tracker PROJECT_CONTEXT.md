@@ -1,6 +1,6 @@
 # Time Tracker Bot — Project Context
 
-> **For any LLM picking up this project:** Read this entire file first. It contains everything needed to continue work without losing context. Last updated: 2026-09-04. **Status: deployed and running 24/7 on Railway.**
+> **For any LLM picking up this project:** Read this entire file first. It contains everything needed to continue work without losing context. Last updated: 2026-09-12. **Status: built, deployed, and fully verified in production.**
 
 ## 🔒 SECURITY INSTRUCTIONS FOR AI TOOLS
 
@@ -32,9 +32,10 @@ A personal time-tracking system that captures the owner's activities through voi
 
 ---
 
-## 3. Current Status (as of 2026-09-04)
+## 3. Current Status (as of 2026-09-12)
 
-**Phases 1–3 are complete. The bot is live on Railway, running 24/7, independent of the laptop.**
+**The build is complete. Every component has been verified working in production.**
+The bot runs 24/7 on Railway, independent of the laptop. Nothing is outstanding.
 
 - ✅ Telegram bot created via @BotFather
 - ✅ Notion database created (Time Log) under Life OS with all views
@@ -47,10 +48,16 @@ A personal time-tracking system that captures the owner's activities through voi
 - ✅ `/summary` command added; verified working end-to-end against real Notion data
 - ✅ Code in git, pushed to GitHub: `vijayanand0502-hue/time-tracker-bot` (private)
 - ✅ **Deployed to Railway — running 24/7**, no longer tied to the laptop
-- ⚠️ The 10 PM automatic summary has been verified by code path and by `/summary`,
-  but has not yet been *observed* firing on its own schedule on Railway. Confirm this
-  on the first night, then tick it off here.
-- ⚠️ Local runs now conflict with Railway — only one poller per Telegram token
+- ✅ **The 10 PM automatic summary fires on schedule on Railway** — observed in
+  production, not just verified by code path. This was the last open item, and it was
+  the exact thing that was silently broken before (see Section 12).
+- ⚠️ Local runs conflict with Railway — only one poller per Telegram token. Pause the
+  Railway service before running `python3 main.py` to debug.
+
+### Nothing is pending on the build
+
+The remaining work is behavioural, not technical: Phase 4 asks whether this tool actually
+gets used. Resist adding features until that question is answered honestly.
 
 ---
 
@@ -299,7 +306,7 @@ Goal: find out whether this tool actually gets used, before investing in more fe
 | Old API key being used despite `.env` update | Google Drive serving stale cache + duplicate `env` file (no dot) alongside `.env` | Delete via Terminal, recreate in VS Code, wait 10s before running |
 | `Model llama-3.3-70b-versatile does not exist` | Model not on free tier (Enterprise-tagged) | Use `openai/gpt-oss-20b` instead |
 | `.env` not visible in Finder | macOS hides dotfiles by default | Normal — use `Cmd+Shift+.` to toggle, or just use VS Code |
-| **Nightly summary never fired** | `AsyncIOScheduler()` was started inside the *sync* `main()`, before `run_polling()` existed. `run_polling()` creates its own event loop via `asyncio.run()`, so the scheduler stayed bound to a loop that never ran. Reproduced: job silently never executes, only a `DeprecationWarning: There is no current event loop` at start. | Use PTB's built-in `app.job_queue.run_daily(...)`, which starts with the application on the same loop. Requires `python-telegram-bot[job-queue]`. |
+| **Nightly summary never fired** | `AsyncIOScheduler()` was started inside the *sync* `main()`, before `run_polling()` existed. `run_polling()` creates its own event loop via `asyncio.run()`, so the scheduler stayed bound to a loop that never ran. Reproduced: job silently never executes, only a `DeprecationWarning: There is no current event loop` at start. | Use PTB's built-in `app.job_queue.run_daily(...)`, which starts with the application on the same loop. Requires `python-telegram-bot[job-queue]`. **Confirmed firing on schedule in production, 2026-09-12.** |
 | Bot token appearing in terminal logs (repeatedly, over setup) | `httpx` logs every request URL at INFO level, and the Telegram API embeds the token in the path (`/bot<TOKEN>/getMe`) | `logging.getLogger("httpx").setLevel(logging.WARNING)` in `main.py`. This also keeps the token out of Railway's deploy logs. |
 | `.env.example` would not have been committed | `.gitignore` pattern `.env.*` matches `.env.example` | Added `!.env.example` exception below it |
 
